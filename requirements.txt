@@ -1,0 +1,14 @@
+# Web Framework
+Flask==3.1.0
+
+# API Connectivity
+requests==2.32.3
+httpx==0.28.1
+
+# AI & Environment Management
+python-dotenv==1.0.1
+langflow==1.0.0
+
+# Optional: Deployment & Stability
+gunicorn==23.0.0
+flask-cors==5.0.0

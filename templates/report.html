@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quality Certificate | HelioRoots AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .agri-bg { background: #020617; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .cert-border { border: 2px solid #10b981; position: relative; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; padding: 20px !important; }
+            .glass-card { border: 2px solid #eee !important; background: white !important; color: black !important; box-shadow: none !important; margin-bottom: 20px !important; }
+            .text-emerald-400 { color: #059669 !important; }
+            .cert-border { border: 4px double #10b981 !important; padding: 20px !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 p-8 agri-bg">
+    <div id="report-content" class="max-w-6xl mx-auto cert-border rounded-[3rem] p-10">
+        
+        <header class="flex justify-between items-start mb-12">
+            <div>
+                <h1 class="text-5xl font-black text-emerald-400 italic uppercase tracking-tighter">Digital Quality Certificate</h1>
+                <p class="text-slate-500 font-bold tracking-[0.3em] uppercase text-[10px] mt-2">Verified by HelioRoots AI & Regional Lab Analytics</p>
+            </div>
+            <button onclick="window.print()" class="no-print bg-emerald-500 text-slate-950 font-black px-8 py-3 rounded-2xl hover:scale-105 transition-transform">
+                <i class="fas fa-file-export mr-2"></i> GENERATE PDF
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div class="glass-card p-8 rounded-[2rem] flex gap-6 items-center">
+                <img id="crop-img" src="" class="w-32 h-32 rounded-3xl object-cover border-4 border-emerald-500/20">
+                <div>
+                    <h3 class="text-slate-500 uppercase text-[10px] font-bold tracking-widest">Active Crop</h3>
+                    <p id="crop-name" class="text-3xl font-black uppercase text-white">--</p>
+                    <div id="grade-badge" class="inline-block mt-2 px-3 py-1 bg-emerald-500/20 rounded-full border border-emerald-500/30">
+                        <span class="text-[10px] font-bold text-emerald-400">ANALYZING QUALITY...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-8 rounded-[2rem]">
+                <h3 class="text-emerald-500 uppercase text-[10px] font-bold tracking-widest mb-4">Regional Database Profile</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-slate-500 text-[10px] uppercase">District</p>
+                        <p id="dist-name" class="font-bold">--</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-[10px] uppercase">Soil Type</p>
+                        <p id="soil-type" class="font-bold">--</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-[10px] uppercase">Avg Rainfall</p>
+                        <p id="rain-data" class="font-bold">-- mm</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 text-[10px] uppercase">Avg Temp</p>
+                        <p id="temp-data" class="font-bold">-- °C</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="text-slate-500 uppercase text-[9px] font-bold mb-4">Verified Direct Buyer</h3>
+                <h4 id="buyer-name" class="text-xl font-black mb-1 italic text-emerald-400">--</h4>
+                <p class="text-[10px] text-slate-500 mb-6">MAPPED FROM PROCUREMENT DATABASE</p>
+                <button id="buyer-link" class="no-print w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold hover:bg-emerald-500 hover:text-slate-950 transition-all">VISIT PORTAL</button>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="text-slate-500 uppercase text-[9px] font-bold mb-4">Mandi Representative</h3>
+                <h4 id="agent-name" class="text-xl font-black mb-1 italic text-blue-400">--</h4>
+                <p class="text-[10px] text-slate-500 mb-6">AUTHORIZED MIDDLEMAN AGENT</p>
+                <button id="agent-call" class="no-print w-full py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold hover:bg-blue-600 transition-all">CALL AGENT</button>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl bg-emerald-500/5 border-emerald-500/20">
+                <h3 class="text-emerald-500 uppercase text-[9px] font-bold mb-4">Valuation</h3>
+                <p class="text-[10px] text-slate-500">Live Mandi Price</p>
+                <p id="mandi-price" class="text-3xl font-black mb-1">₹0</p>
+                <p class="text-[9px] text-slate-500 italic">*Current standard per Quintal</p>
+            </div>
+        </div>
+
+        <div class="glass-card p-8 rounded-[2rem] border-yellow-500/20">
+            <h3 class="text-yellow-500 uppercase text-[10px] font-bold mb-4 tracking-widest flex items-center gap-2">
+                <i class="fas fa-brain"></i> AI Agronomist Measures for Sustainability
+            </h3>
+            <p id="market-advice" class="text-lg font-medium italic text-slate-300 leading-relaxed">
+                Analyzing soil nutrient depletion and local bee activity...
+            </p>
+        </div>
+
+        <button onclick="window.location.href='/postharvesting'" class="no-print w-full mt-10 bg-slate-900 border border-white/10 py-5 rounded-3xl font-black uppercase text-xs tracking-[0.3em] hover:border-emerald-500 transition-all">
+            Enter Post-Harvesting Module <i class="fas fa-arrow-right ml-3"></i>
+        </button>
+    </div>
+
+    <script>
+        window.onload = async () => {
+            const district = localStorage.getItem('userDistrict') || 'Mandya';
+            const crop = localStorage.getItem('selectedCrop') || 'Paddy';
+            const lang = localStorage.getItem('selectedLang') || 'en-IN';
+
+            // 1. Initial UI Setup
+            document.getElementById('crop-name').innerText = crop;
+            document.getElementById('dist-name').innerText = district;
+
+            const cropPhotos = {
+                'Paddy': 'https://images.unsplash.com/photo-1728895604559-a4e16081504e?q=80&w=400',
+                'Tomato': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
+                'Ginger': 'https://cdn.britannica.com/19/231119-050-35483892/Indian-ginger-Zingiber-officinale.jpg',
+                'Ragi': 'https://images.unsplash.com/photo-1768729339998-909158957162?q=80&w=400'
+            };
+            document.getElementById('crop-img').src = cropPhotos[crop] || cropPhotos['Paddy'];
+
+            // 2. Data Fetch from SQL & AI
+            try {
+                const formData = new FormData();
+                formData.append('district', district);
+                formData.append('crop', crop);
+                formData.append('language', lang);
+
+                const response = await fetch('/api/get_market_report', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                // Regional Data from 'regions' & 'soil_types' tables
+                document.getElementById('soil-type').innerText = data.soil_name || "Red Loamy Soil";
+                document.getElementById('rain-data').innerText = `${data.rainfall || '850'} mm`;
+                document.getElementById('temp-data').innerText = `${data.temp || '28.5'} °C`;
+
+                // Logistics Data from 'companies' & 'middlemen' tables
+                document.getElementById('buyer-name').innerText = data.buyer_name;
+                document.getElementById('agent-name').innerText = data.agent_name;
+                document.getElementById('buyer-link').onclick = () => window.location.href = `https://www.google.com/search?q=${data.buyer_name}`;
+                document.getElementById('agent-call').onclick = () => window.location.href = `tel:${data.agent_phone}`;
+
+                // Market Data
+                document.getElementById('mandi-price').innerText = `₹${data.price}`;
+                document.getElementById('grade-badge').innerHTML = `<span class="text-[10px] font-bold text-emerald-400">CERTIFIED ${data.grade}</span>`;
+                document.getElementById('market-advice').innerText = data.advice;
+
+                // Sequential Voice guidance
+                if(typeof speak === 'function') {
+                    speak(data.advice, lang);
+                    setTimeout(() => {
+                        const nextMsg = lang === 'kn-IN' ? "ಈಗ ನಾವು ಕೊಯ್ಲಿನ ನಂತರದ ಹಂತಕ್ಕೆ ಹೋಗೋಣ." : "Now let us go to post harvesting.";
+                        speak(nextMsg, lang);
+                    }, 15000);
+                }
+            } catch (e) { console.error("Identity Report Error:", e); }
+        };
+    </script>
+</body>
+</html>

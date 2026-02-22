@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HelioRoots AI | Precision Command</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans">
+
+    <section id="page-login" class="page active-page flex items-center justify-center">
+        <div class="glass p-10 w-full max-w-md text-center border-t-4 border-emerald-500">
+            <h1 class="text-4xl font-black text-emerald-500 mb-2 tracking-tighter italic">HELIOROOTS AI</h1>
+            <p class="text-[10px] font-bold tracking-[0.3em] text-slate-500 mb-8 uppercase">National Hackathon Edition</p>
+            <div class="space-y-4">
+                <input type="email" id="email" placeholder="Farmer ID (Email)" class="input-field">
+                <input type="password" id="pass" placeholder="Password" class="input-field">
+                <button onclick="login()" class="btn-primary w-full py-4">SECURE LOGIN</button>
+                <button class="text-[10px] text-slate-500 hover:text-emerald-400">FORGOT PASSWORD?</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-lang" class="page flex flex-col items-center justify-center">
+        <div class="glass p-8 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-6 text-center">SELECT LANGUAGE / ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ</h2>
+            <div class="grid gap-3">
+                <button onclick="setLanguage('kn-IN', 'ಸ್ವಾಗತ')" class="lang-btn">ಕನ್ನಡ (KANNADA)</button>
+                <button onclick="setLanguage('en-IN', 'Welcome')" class="lang-btn">ENGLISH (GLOBAL)</button>
+                <button onclick="setLanguage('hi-IN', 'नमस्ते')" class="lang-btn">हिन्दी (HINDI)</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-map" class="page container mx-auto max-w-4xl">
+        <div class="glass p-6 space-y-4">
+            <h2 class="text-lg font-black uppercase text-emerald-500">Step 1: Locate Farmland</h2>
+            <div id="map"></div>
+            <div class="flex gap-4">
+                <input type="number" id="acres" placeholder="Enter Acres (e.g. 1.5)" class="input-field flex-1">
+                <button onclick="setupTopology()" class="btn-primary px-8">LOCK LOCATION</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="page-sim" class="page container mx-auto max-w-4xl">
+        <div class="glass p-8 text-center">
+            <h2 class="text-xl font-bold mb-2">MASTER-SLAVE TOPOLOGY</h2>
+            <p class="text-xs text-slate-400 mb-6 uppercase tracking-widest">Optimizing Node Placement for <span id="acre-display">0</span> Acres</p>
+            <div id="sim-canvas" class="relative bg-emerald-950/20 h-80 rounded-3xl border border-emerald-500/30 overflow-hidden flex items-center justify-center">
+                </div>
+            <button onclick="nav('page-crops')" class="btn-primary mt-8 w-full max-w-xs">PROCEED TO CROP SELECTION</button>
+        </div>
+    </section>
+
+    <script>
+        let currentLang = 'en-IN';
+        let selectedLocation = null;
+
+        function nav(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.getElementById(id).classList.add('active-page');
+            window.scrollTo(0,0);
+        }
+
+        function login() {
+            // In a real app, verify with Firebase here
+            nav('page-lang');
+        }
+
+        function setLanguage(lang, greet) {
+            currentLang = lang;
+            const msg = new SpeechSynthesisUtterance(greet + ". I am your agricultural assistant. Let's start by locating your farm.");
+            msg.lang = lang;
+            window.speechSynthesis.speak(msg);
+            nav('page-map');
+            initMap();
+        }
+
+        function initMap() {
+            const map = L.map('map').setView([12.9716, 77.5946], 13);
+            L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { subdomains:['mt0','mt1','mt2','mt3'] }).addTo(map);
+            const marker = L.marker([12.9716, 77.5946], {draggable: true}).addTo(map);
+            
+            map.on('click', (e) => {
+                marker.setLatLng(e.latlng);
+                selectedLocation = e.latlng;
+            });
+        }
+
+        function setupTopology() {
+            const acres = document.getElementById('acres').value || 1;
+            document.getElementById('acre-display').innerText = acres;
+            const slaveCount = Math.ceil(acres * 4);
+            const canvas = document.getElementById('sim-canvas');
+            canvas.innerHTML = '<div class="hub-node"><i class="fas fa-broadcast-tower"></i></div>';
+            
+            for(let i=0; i < slaveCount; i++) {
+                const slave = document.createElement('div');
+                slave.className = 'slave-node';
+                slave.style.left = Math.random() * 80 + 10 + '%';
+                slave.style.top = Math.random() * 80 + 10 + '%';
+                canvas.appendChild(slave);
+            }
+            nav('page-sim');
+        }
+    </script>
+</body>
+</html>

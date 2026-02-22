@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Post-Harvest Intelligence | HelioRoots AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .agri-bg { background: linear-gradient(rgba(2, 6, 23, 0.9), rgba(2, 6, 23, 0.9)), url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=1600'); background-size: cover; background-attachment: fixed; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .method-card { transition: all 0.3s ease; border: 1px solid rgba(255, 255, 255, 0.1); }
+        .method-card:hover { border-color: #10b981; transform: scale(1.05); }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 p-8 agri-bg">
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-black text-emerald-400 mb-4 italic uppercase">Post-Harvest Excellence</h1>
+            <p id="sub-title" class="text-slate-400 font-bold tracking-widest uppercase text-xs">Optimizing Value for your Crop</p>
+        </header>
+
+        <div class="mb-12">
+            <h3 class="text-emerald-500 font-bold uppercase text-xs mb-6 tracking-widest text-center">AI Suggested Preservation Methods</h3>
+            <div id="method-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <div class="glass p-8 rounded-[2rem]">
+                <h3 class="text-blue-400 font-bold uppercase text-xs mb-6 tracking-widest">Financial Yield Breakdown</h3>
+                <div class="space-y-6">
+                    <div>
+                        <p class="text-[10px] text-slate-500 uppercase font-bold mb-1">Mandi Sale Value</p>
+                        <p id="primary-income" class="text-3xl font-black">₹0</p>
+                    </div>
+                    <div class="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                        <p class="text-[10px] text-emerald-500 uppercase font-bold mb-1">Residue (Waste) Profit</p>
+                        <p id="residue-income" class="text-2xl font-black text-emerald-400">₹0</p>
+                        <p class="text-[9px] text-slate-400 mt-1 italic">Earnings from selling stalks/straw for bio-fuel</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-8 rounded-[2rem] border-emerald-500/50 bg-emerald-500/5 flex flex-col justify-center text-center">
+                <p class="text-xs text-slate-400 uppercase font-bold mb-2">Estimated Net Profit</p>
+                <h2 id="total-profit" class="text-6xl font-black text-emerald-400 mb-4">₹0</h2>
+                <button onclick="window.location.href='/'" class="bg-emerald-500 text-slate-950 font-black py-4 rounded-2xl hover:bg-emerald-400 transition-all uppercase text-sm">
+                    Complete Journey <i class="fas fa-check-circle ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const crop = localStorage.getItem('selectedCrop') || 'Paddy';
+        const lang = localStorage.getItem('selectedLang') || 'en-IN';
+        const district = localStorage.getItem('userDistrict') || 'Mandya';
+
+        // Post-Harvest methods mapped by crop
+        const harvestMethods = {
+            'Paddy': [
+                { name: 'Mechanical Drying', img: 'https://images.unsplash.com/photo-1590682680695-43b964a3ae17?w=400' },
+                { name: 'Hermetic Storage', img: 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=400' },
+                { name: 'Parboiling', img: 'https://images.unsplash.com/photo-1565815967314-5187f844fd2a?q=80&w=1332&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }
+            ],
+            'Tomato': [
+                { name: 'Cold Storage', img: 'https://images.unsplash.com/photo-1584473457406-623028fedded?w=400' },
+                { name: 'Pulp Processing', img: 'https://images.unsplash.com/photo-1591113366666-666666666666?w=400' },
+                { name: 'Grading/Sorting', img: 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400' }
+            ],
+            'Ragi': [
+                { name: 'Threshing', img: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400' },
+                { name: 'Milling', img: 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=400' },
+                { name: 'Sun Drying', img: 'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=400' }
+            ],
+            'Ginger': [
+                { name: 'Curing', img: 'https://cdn.britannica.com/19/231119-050-35483892/Indian-ginger-Zingiber-officinale.jpg' },
+                { name: 'Washing', img: 'https://images.unsplash.com/photo-1591113366666-666666666666?w=400' },
+                { name: 'Cold Room Storage', img: 'https://images.unsplash.com/photo-1584473457406-623028fedded?w=400' }
+            ]
+        };
+
+        window.onload = async () => {
+            // Injected Methods UI
+            const container = document.getElementById('method-container');
+            const methods = harvestMethods[crop] || harvestMethods['Paddy'];
+            
+            methods.forEach(m => {
+                container.innerHTML += `
+                    <div class="method-card glass p-4 rounded-3xl text-center">
+                        <img src="${m.img}" class="h-32 w-full object-cover rounded-2xl mb-4 shadow-lg">
+                        <p class="font-black italic text-emerald-400 uppercase text-sm">${m.name}</p>
+                    </div>
+                `;
+            });
+
+            // Calculate Finances based on Mandi Data
+            try {
+                const formData = new FormData();
+                formData.append('district', district);
+                formData.append('crop', crop);
+
+                const response = await fetch('/api/get_market_report', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                const rate = data.price;
+                const totalIncome = rate * 25; // per acre calculation
+                const residueIncome = totalIncome * 0.15; // 15% bonus for biomass
+                const finalProfit = totalIncome + residueIncome;
+
+                document.getElementById('primary-income').innerText = `₹${totalIncome.toLocaleString()}`;
+                document.getElementById('residue-income').innerText = `₹${residueIncome.toLocaleString()}`;
+                document.getElementById('total-profit').innerText = `₹${finalProfit.toLocaleString()}`;
+
+                // Final AI Closing
+                if(typeof speak === 'function') {
+                    const closing = lang === 'kn-IN' ? 
+                        `ಕೊಯ್ಲಿನ ನಂತರದ ವಿಶ್ಲೇಷಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ. ${crop} ಗೆ ${methods[0].name} ಉತ್ತಮ ವಿಧಾನವಾಗಿದೆ. ನಿಮ್ಮ ಅಂದಾಜು ಒಟ್ಟು ಲಾಭ ${finalProfit} ರೂಪಾಯಿಗಳು.` :
+                        `Post-harvest analysis complete. For ${crop}, the recommended method is ${methods[0].name}. Your estimated total profit is ${finalProfit} rupees.`;
+                    speak(closing, lang);
+                }
+            } catch (e) { console.error(e); }
+        };
+    </script>
+</body>
+</html>

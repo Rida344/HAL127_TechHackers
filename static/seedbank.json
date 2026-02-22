@@ -1,0 +1,14 @@
+{
+  "region_id": "BLR_SOUTH_10KM",
+  "total_active_farmers": 200,
+  "crop_stats": {
+    "Ginger": 110,
+    "Tomato": 45,
+    "Carrot": 30,
+    "Turmeric": 15
+  },
+  "market_trends": {
+    "Turmeric": "High Demand",
+    "Ginger": "Market Saturated"
+  }
+}

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login | HelioRoots AI</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        :root { --glass: rgba(255, 255, 255, 0.08); }
+        body { background: #020617; color: #f8fafc; overflow: hidden; }
+        .agri-bg { 
+            background-image: linear-gradient(rgba(2,6,23,0.85), rgba(2,6,23,0.85)), 
+            url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200'); 
+            background-size: cover; 
+            background-attachment: fixed; 
+        }
+        .glass { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 2rem; }
+    </style>
+</head>
+<body class="agri-bg min-h-screen flex items-center justify-center p-6">
+
+    <div id="login-layer" class="glass p-10 w-full max-w-md text-center border-t-4 border-green-500 shadow-2xl transition-all duration-700">
+        <div class="mb-6">
+            <i class="fas fa-seedling text-5xl text-green-500 animate-pulse"></i>
+        </div>
+        <h1 class="text-4xl font-black text-green-500 mb-2 tracking-tighter italic">HELIOROOTS AI</h1>
+        <p class="text-[10px] font-bold tracking-[0.3em] text-gray-500 mb-8 uppercase">Precision Farming Portal</p>
+        
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="Farmer ID (Email)" 
+                   class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none focus:border-green-500 transition-all">
+            
+            <input type="password" id="pass" placeholder="Security PIN" 
+                   class="w-full bg-white/5 p-4 rounded-2xl border border-white/10 outline-none focus:border-green-500 transition-all">
+            
+            <div class="flex justify-between px-2">
+                <p class="text-[10px] font-bold text-gray-400 cursor-pointer hover:text-green-400 uppercase tracking-widest" onclick="showReset()">Forgot Password?</p>
+                <p class="text-[10px] font-bold text-gray-400 cursor-pointer hover:text-green-400 uppercase tracking-widest">New Farmer</p>
+            </div>
+
+            <button id="login-btn" onclick="handleLogin()" 
+                    class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3">
+                <span>INITIALIZE SYSTEM</span>
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="reset-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[200] p-6">
+        <div class="glass p-8 w-full max-w-sm text-center border-t-4 border-blue-500">
+            <h2 class="text-lg font-black text-blue-400 mb-4 uppercase">Reset Security PIN</h2>
+            <input type="email" id="reset-email" placeholder="Enter Registered Email"
+                class="w-full bg-white/5 p-4 rounded-xl mb-4 border border-white/10 outline-none focus:border-blue-500">
+            <button onclick="sendReset()" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-xs">SEND RESET LINK</button>
+            <p onclick="closeReset()" class="text-xs text-gray-400 mt-4 cursor-pointer hover:underline">Return to Login</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBejony9iOze0wGS9ErVVtJ1wYekVwEHOk",
+            authDomain: "helioroots-ai-effbf.firebaseapp.com",
+            projectId: "helioroots-ai-effbf",
+            storageBucket: "helioroots-ai-effbf.firebasestorage.app",
+            messagingSenderId: "207971064659",
+            appId: "1:207971064659:web:afb913b1cfad8f37e8dfa6",
+            measurementId: "G-LZJWZF48P8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // EXPOSE FUNCTIONS TO WINDOW FOR HTML ONCLICK
+        window.handleLogin = async function() {
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("pass").value;
+            const btn = document.getElementById("login-btn");
+
+            if (!email || !password) {
+                alert("Please enter both ID and PIN.");
+                return;
+            }
+
+            btn.innerText = "AUTHENTICATING...";
+            btn.disabled = true;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                localStorage.setItem('userEmail', email);
+                
+                // REDIRECT TO NEXT PAGE (The Language Page)
+                window.location.href = "/language"; 
+            } catch (error) {
+                btn.innerText = "INITIALIZE SYSTEM";
+                btn.disabled = false;
+                alert("Authentication Failed: " + error.message);
+            }
+        };
+
+        window.showReset = () => document.getElementById("reset-modal").classList.remove("hidden");
+        window.closeReset = () => document.getElementById("reset-modal").classList.add("hidden");
+
+        window.sendReset = async function() {
+            const email = document.getElementById("reset-email").value;
+            if (!email) { alert("Please enter email."); return; }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                alert("Reset link sent!");
+                closeReset();
+            } catch (e) { alert(e.message); }
+        };
+    </script>
+</body>
+</html>

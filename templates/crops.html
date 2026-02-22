@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Crop | HelioRoots AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .crop-card { cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid rgba(255, 255, 255, 0.1); }
+        .crop-card:hover { transform: translateY(-12px) scale(1.02); border-color: #10b981; box-shadow: 0 20px 30px -10px rgba(16, 185, 129, 0.3); background: rgba(255, 255, 255, 0.05); }
+        .agri-bg { background: linear-gradient(rgba(2, 6, 23, 0.85), rgba(2, 6, 23, 0.85)), url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-attachment: fixed; }
+        .selected-crop { border-color: #10b981 !important; background: rgba(16, 185, 129, 0.15) !important; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+        .glass-modal { background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(20px); }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 p-8 agri-bg">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-12">
+            <h1 id="header-text" class="text-5xl font-black uppercase text-emerald-400 mb-6 italic tracking-tighter">Select Your Crop</h1>
+            <div class="max-w-md mx-auto relative mb-4">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500"></i>
+                <input type="text" id="cropSearch" onkeyup="searchCrops()" class="w-full bg-white/10 border border-white/20 p-4 pl-12 rounded-2xl outline-none focus:border-emerald-500 placeholder-slate-500" placeholder="Search crops...">
+            </div>
+            <p class="text-slate-400 text-[10px] font-bold tracking-[0.3em] uppercase">Regional Proximity Intelligence</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="cropGrid">
+            <div id="card-Ginger" onclick="processCrop('Ginger')" class="crop-card glass p-6 text-center rounded-3xl overflow-hidden group">
+                <img src="https://cdn.britannica.com/19/231119-050-35483892/Indian-ginger-Zingiber-officinale.jpg" class="h-40 w-full object-cover rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-500">
+                <h3 class="text-2xl font-black italic">GINGER</h3>
+            </div>
+            <div id="card-Tomato" onclick="processCrop('Tomato')" class="crop-card glass p-6 text-center rounded-3xl overflow-hidden group">
+                <img src="https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400" class="h-40 w-full object-cover rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-500">
+                <h3 class="text-2xl font-black italic">TOMATO</h3>
+            </div>
+            <div id="card-Paddy" onclick="processCrop('Paddy')" class="crop-card glass p-6 text-center rounded-3xl overflow-hidden group">
+                <img src="https://images.unsplash.com/photo-1728895604559-a4e16081504e?q=80&w=1074" class="h-40 w-full object-cover rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-500">
+                <h3 class="text-2xl font-black italic">PADDY</h3>
+            </div>
+        </div>
+    </div>
+
+    <div id="congestion-modal" class="fixed inset-0 glass-modal hidden flex-col items-center justify-center z-[100] p-6">
+        <div class="bg-slate-900/50 p-10 rounded-[3rem] border-2 border-white/10 max-w-lg w-full text-center shadow-2xl">
+            <div id="alert-icon" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-white/5">
+                <i class="fas fa-microchip text-3xl text-emerald-500"></i>
+            </div>
+            <h2 id="modal-title" class="text-3xl font-black mb-4 uppercase italic">Analyzing...</h2>
+            <p id="modal-body" class="text-slate-400 leading-relaxed mb-8 text-lg"></p>
+            <button id="modal-btn" class="w-full py-5 rounded-2xl font-black uppercase tracking-widest transition-all">
+                WAITING FOR AI...
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const lang = localStorage.getItem('selectedLang') || 'en-IN';
+        const district = localStorage.getItem('userDistrict') || 'Mandya';
+
+        const translations = {
+            'kn-IN': {
+                header: "ಬೆಳೆಯನ್ನು ಆರಿಸಿ",
+                search: "ಬೆಳೆಯನ್ನು ಹುಡುಕಿ...",
+                over50Title: "ಪ್ರಾದೇಶಿಕ ಎಚ್ಚರಿಕೆ",
+                safeTitle: "ಸುರಕ್ಷಿತ ಆಯ್ಕೆ",
+                over50Body: (crop, dens) => `ಎಚ್ಚರಿಕೆ! ನಿಮ್ಮ ಪ್ರದೇಶದಲ್ಲಿ ಶೇಕಡಾ ${dens} ರಷ್ಟು ರೈತರು ಈಗಾಗಲೇ ${crop} ಬೆಳೆದಿದ್ದಾರೆ. ದಯವಿಟ್ಟು ಬೇರೆ ಬೆಳೆ ಬೆಳೆಯಲು ಯೋಚಿಸಿ.`,
+                safeBody: (crop, dens) => `${crop} ಆಯ್ಕೆಮಾಡಲಾಗಿದೆ. ಪ್ರಾದೇಶಿಕ ಸಾಂದ್ರತೆಯು ಶೇಕಡಾ ${dens} ರಷ್ಟಿದೆ, ಇದು ಸುರಕ್ಷಿತವಾಗಿದೆ.`,
+                retryBtn: "ಬೇರೆ ಬೆಳೆಯನ್ನು ಆರಿಸಿ",
+                proceedBtn: "ಮಣ್ಣಿನ ಪರೀಕ್ಷೆಗೆ ಹೋಗಿ"
+            },
+            'en-IN': {
+                header: "Select Your Crop",
+                search: "Search crops...",
+                over50Title: "Regional Alert",
+                safeTitle: "Safe Opportunity",
+                over50Body: (crop, dens) => `Attention! Regional density for ${crop} is at ${dens}%. This congestion may reduce your profit margins. Please select a different crop.`,
+                safeBody: (crop, dens) => `${crop} selected. Regional density is only ${dens}%, which is within safe limits.`,
+                retryBtn: "CHOOSE DIFFERENT CROP",
+                proceedBtn: "PROCEED TO SOIL TEST"
+            }
+        };
+
+        function forceSpeak(text) {
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = lang;
+            utter.rate = 0.9;
+            window.speechSynthesis.speak(utter);
+        }
+
+        async function processCrop(crop) {
+            const modal = document.getElementById('congestion-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            const btn = document.getElementById('modal-btn');
+            const icon = document.getElementById('alert-icon');
+
+            // Show modal immediately as loading state
+            modal.classList.replace('hidden', 'flex');
+            title.innerText = "Analyzing...";
+            body.innerText = "Checking 10km radius density...";
+            btn.innerText = "PLEASE WAIT";
+            btn.disabled = true;
+
+            const coords = JSON.parse(localStorage.getItem('farmCoords')) || { lat: 12.97, lng: 77.59 };
+            const formData = new FormData();
+            formData.append('crop', crop);
+            formData.append('district', district);
+            formData.append('lat', coords.lat);
+            formData.append('lng', coords.lng);
+
+            try {
+                const response = await fetch('/api/check_seed_density', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                const t = translations[lang] || translations['en-IN'];
+                const isCongested = data.density > 50;
+                btn.disabled = false;
+
+                if (isCongested) {
+                    title.innerText = t.over50Title;
+                    title.className = "text-3xl font-black mb-4 uppercase italic text-yellow-500";
+                    body.innerText = t.over50Body(crop, data.density);
+                    btn.innerText = t.retryBtn;
+                    btn.className = "w-full py-5 rounded-2xl font-black uppercase tracking-widest bg-slate-800 text-white hover:bg-slate-700";
+                    icon.innerHTML = '<i class="fas fa-exclamation-triangle text-3xl text-yellow-500"></i>';
+                    
+                    btn.onclick = () => {
+                        modal.classList.replace('flex', 'hidden');
+                        document.querySelectorAll('.crop-card').forEach(c => c.classList.remove('selected-crop'));
+                    };
+                } else {
+                    title.innerText = t.safeTitle;
+                    title.className = "text-3xl font-black mb-4 uppercase italic text-emerald-400";
+                    body.innerText = t.safeBody(crop, data.density);
+                    btn.innerText = t.proceedBtn;
+                    btn.className = "w-full py-5 rounded-2xl font-black uppercase tracking-widest bg-emerald-500 text-slate-950 hover:bg-emerald-400";
+                    icon.innerHTML = '<i class="fas fa-check-circle text-3xl text-emerald-500"></i>';
+                    
+                    btn.onclick = () => {
+                        window.location.href = '/soil';
+                    };
+                }
+
+                localStorage.setItem('selectedCrop', crop);
+                forceSpeak(body.innerText);
+
+            } catch (e) {
+                console.error("Analysis Failed", e);
+                window.location.href = '/soil';
+            }
+        }
+
+        function searchCrops() {
+            let input = document.getElementById('cropSearch').value.toLowerCase();
+            let cards = document.getElementsByClassName('crop-card');
+            for (let card of cards) {
+                card.style.display = card.innerText.toLowerCase().includes(input) ? "block" : "none";
+            }
+        }
+
+        window.onload = () => {
+            const t = translations[lang] || translations['en-IN'];
+            document.getElementById('header-text').innerText = t.header;
+            document.getElementById('cropSearch').placeholder = t.search;
+            
+            const initialText = lang === 'kn-IN' ? "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಬೆಳೆಯನ್ನು ಆರಿಸಿ." : "Please select your crop.";
+            setTimeout(() => forceSpeak(initialText), 600);
+        };
+    </script>
+</body>
+</html>

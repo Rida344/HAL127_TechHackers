@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hybrid Hub Command | HelioRoots AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/js/speech.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .farmland-view {
+            /* Background updated to your specified farmland image */
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), 
+                        url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 650px;
+            border-radius: 2.5rem;
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 2px;
+            border: 4px solid #1e293b;
+        }
+
+        .land-sector {
+            border: 1px dashed rgba(255,255,255,0.1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .master-hub-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .turbine { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .led-screen {
+            width: 55px; height: 35px;
+            background: #000;
+            border: 2px solid #475569;
+            color: #10b981;
+            font-family: 'Courier New', monospace;
+            font-size: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .battery-container {
+            width: 30px;
+            height: 15px;
+            border: 2px solid #475569;
+            border-radius: 2px;
+            position: relative;
+            margin-top: 5px;
+        }
+        .battery-fill {
+            height: 100%;
+            background: #10b981;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .slave-node {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            z-index: 50;
+            text-align: center;
+        }
+
+        .valve-glow {
+            position: absolute;
+            inset: -15px;
+            border: 3px solid #3b82f6;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.1);
+            opacity: 0;
+            transition: all 1s ease;
+            transform: rotateX(70deg);
+        }
+        .active-valve { opacity: 1; box-shadow: 0 0 30px #3b82f6; }
+
+        .comm-beam {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, #f97316, transparent);
+            transform-origin: left center;
+            opacity: 0;
+            z-index: 40;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 p-6">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-black text-emerald-400 italic uppercase">Hybrid Hub Command</h1>
+                <p id="system-status" class="text-[10px] text-slate-500 font-mono tracking-widest uppercase">Syncing GPS: <span id="gps-coords">--</span></p>
+            </div>
+            <div class="flex gap-4">
+                <div class="bg-slate-900 px-4 py-2 rounded-xl border border-white/5 text-center">
+                    <p class="text-[9px] text-slate-500 uppercase">Energy Generation</p>
+                    <p class="text-xs font-bold text-sky-400"><i class="fas fa-bolt"></i> <span id="charge-rate">0</span>W</p>
+                </div>
+                <div class="bg-slate-900 px-4 py-2 rounded-xl border border-white/5 text-center">
+                    <p class="text-[9px] text-slate-500 uppercase">Storage Bank</p>
+                    <p class="text-xs font-bold text-emerald-400" id="batt-percent">0%</p>
+                </div>
+            </div>
+        </header>
+
+        <div class="farmland-view" id="farm-grid">
+            <div class="land-sector" id="sector-1"></div>
+            <div class="land-sector" id="sector-2"></div>
+            <div class="land-sector" id="sector-3"></div>
+            <div class="land-sector" id="sector-4"></div>
+
+            <div class="master-hub-container">
+                <div class="turbine mb-1"><i class="fas fa-fan text-slate-400 text-3xl"></i></div>
+                <div class="bg-slate-800 p-3 rounded-lg border-2 border-slate-600 shadow-2xl flex flex-col items-center">
+                    <div class="flex gap-2 mb-1">
+                        <i class="fas fa-solar-panel text-yellow-500 text-[10px]"></i>
+                        <i class="fas fa-wind text-sky-400 text-[10px]"></i>
+                    </div>
+                    <div class="led-screen" id="hub-led">INIT...</div>
+                    <div class="battery-container">
+                        <div class="battery-fill" id="hub-batt-fill"></div>
+                    </div>
+                </div>
+                <div class="w-2 h-24 bg-slate-700"></div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div class="bg-slate-900/80 p-6 rounded-3xl border border-white/10">
+                <h3 class="text-xs font-bold text-emerald-500 uppercase mb-3">Live Environmental Intelligence</h3>
+                <div id="status-logs" class="space-y-1 text-[10px] font-mono text-slate-400">
+                    <p>> Hub established at central coordinates.</p>
+                    <p>> Hybrid storage syncing with real-time conditions.</p>
+                </div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div id="weather-badge" class="bg-slate-900 p-4 rounded-2xl border border-blue-500/20 text-center uppercase text-xs font-black">
+                    Live Forecast: <span id="weather-txt">Awaiting API...</span>
+                </div>
+                <button onclick="location.href='/report'" class="bg-emerald-500 text-slate-950 font-black py-4 rounded-2xl hover:bg-emerald-400 transition-all uppercase text-sm">
+                    Generate Harvest Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const acres = parseFloat(localStorage.getItem('userAcreage')) || 1;
+        const farmCoords = JSON.parse(localStorage.getItem('farmCoords')) || { lat: 12.97, lng: 77.59 };
+        const lang = localStorage.getItem('selectedLang') || 'en-IN';
+        
+        document.getElementById('gps-coords').innerText = `${farmCoords.lat.toFixed(4)}, ${farmCoords.lng.toFixed(4)}`;
+
+        async function startSimulation() {
+            const led = document.getElementById('hub-led');
+            const weatherTxt = document.getElementById('weather-txt');
+            const statusLog = document.getElementById('status-logs');
+            const battFill = document.getElementById('hub-batt-fill');
+            const battText = document.getElementById('batt-percent');
+            
+            // 1. Initial Voice Alert
+            if(typeof speak === 'function') speak("Now the hub will check weather through weather API.", lang);
+            led.innerText = "WEATHER SYNC";
+
+            // 2. Fetch REAL data from your app.py endpoint
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        'lat': farmCoords.lat,
+                        'lon': farmCoords.lng,
+                        'language': lang
+                    })
+                });
+                const data = await response.json();
+
+                // 3. Power Generation Animation (Storing in battery)
+                let battery = 0;
+                const chargeInterval = setInterval(() => {
+                    if (battery < 90) {
+                        battery += 2;
+                        battFill.style.width = battery + "%";
+                        battText.innerText = battery + "%";
+                        document.getElementById('charge-rate').innerText = Math.floor(Math.random() * 150 + 400);
+                    } else {
+                        clearInterval(chargeInterval);
+                        document.getElementById('charge-rate').innerText = "0";
+                        addLog("Hybrid Energy Bank Optimized: 90%");
+                    }
+                }, 100);
+
+                // 4. Real-time AI Voice Summary
+                const weatherReport = (lang === 'kn-IN') 
+                    ? `ತಾಪಮಾನ ${data.temp} ಡಿಗ್ರಿ ಸೆಲ್ಸಿಯಸ್. ಸೌರ ಮತ್ತು ಪವನ ಶಕ್ತಿ ಸಂಗ್ರಹವಾಗುತ್ತಿದೆ.` 
+                    : `Sync complete. Current temperature is ${data.temp} degrees. Storing solar and wind energy in the battery bank.`;
+                
+                setTimeout(() => {
+                    if(typeof speak === 'function') speak(weatherReport, lang);
+                    
+                    if(data.rain) {
+                        weatherTxt.innerText = "RAIN DETECTED";
+                        weatherTxt.className = "text-red-500";
+                        led.innerText = "LOCKED";
+                        addLog("Precipitation confirmed via API. Irrigation valves locked.");
+                        if(typeof speak === 'function') speak("Rain expected in the next 24 to 48 hours. Valves will remain closed.", lang);
+                    } else {
+                        weatherTxt.innerText = "CLEAR SKIES";
+                        weatherTxt.className = "text-emerald-400";
+                        led.innerText = "READY";
+                        addLog("Clear forecast confirmed. Activating irrigation using stored energy.");
+                        if(typeof speak === 'function') speak("No rain forecasted. Opening irrigation valves zone by zone.", lang);
+                        deploySlaveNodes();
+                    }
+                }, 2000);
+
+            } catch (err) {
+                console.error(err);
+                led.innerText = "ERROR";
+            }
+        }
+
+        function deploySlaveNodes() {
+            const sectors = [
+                document.getElementById('sector-1'), document.getElementById('sector-2'),
+                document.getElementById('sector-3'), document.getElementById('sector-4')
+            ];
+
+            const hubX = window.innerWidth / 2;
+            const hubY = document.querySelector('.master-hub-container').getBoundingClientRect().top + 50;
+
+            sectors.forEach((sector, i) => {
+                setTimeout(() => {
+                    const node = document.createElement('div');
+                    node.className = "slave-node";
+                    node.innerHTML = `
+                        <div class="valve-glow" id="glow-${i}"></div>
+                        <div class="bg-slate-800 p-2 rounded border border-blue-500/30 text-[7px] font-bold text-center relative z-50">
+                            ZONE ${i+1}<br><span id="v-status-${i}" class="text-slate-500">CLOSED</span>
+                        </div>
+                    `;
+                    sector.appendChild(node);
+
+                    const rect = node.getBoundingClientRect();
+                    const beam = document.createElement('div');
+                    beam.className = "comm-beam";
+                    
+                    const dx = rect.left - hubX + 40;
+                    const dy = rect.top - hubY + 40;
+                    const length = Math.sqrt(dx*dx + dy*dy);
+                    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+                    beam.style.width = length + 'px';
+                    beam.style.left = hubX + 'px';
+                    beam.style.top = hubY + 'px';
+                    beam.style.transform = `rotate(${angle}deg)`;
+                    document.body.appendChild(beam);
+
+                    setTimeout(() => {
+                        beam.style.opacity = "0.7";
+                        document.getElementById(`glow-${i}`).classList.add('active-valve');
+                        document.getElementById(`v-status-${i}`).innerText = "OPEN";
+                        document.getElementById(`v-status-${i}`).className = "text-blue-400";
+                        document.getElementById('hub-led').innerText = `Z-${i+1} ON`;
+                        addLog(`Zone ${i+1} valve opened via hybrid link.`);
+                    }, 500);
+
+                    // Final step: move to report after last zone is done
+                    if(i === sectors.length - 1) {
+                        setTimeout(() => {
+                            window.location.href = '/report';
+                        }, 5000);
+                    }
+
+                }, i * 2500);
+            });
+        }
+
+        function addLog(msg) {
+            const p = document.createElement('p');
+            p.innerText = `> ${msg}`;
+            document.getElementById('status-logs').appendChild(p);
+        }
+
+        window.onload = startSimulation;
+    </script>
+</body>
+</html>

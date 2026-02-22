@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Language Selection | HelioRoots AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { background: #020617; color: #f8fafc; }
+        .agri-bg { 
+            background-image: linear-gradient(rgba(2,6,23,0.85), rgba(2,6,23,0.85)), 
+            url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200'); 
+            background-size: cover; background-attachment: fixed; 
+        }
+        /* Visual feedback for button click */
+        .lang-btn:active {
+            transform: scale(0.95);
+            background: rgba(16, 185, 129, 0.2);
+        }
+    </style>
+</head>
+<body class="agri-bg min-h-screen flex items-center justify-center p-6">
+
+    <div class="glass p-10 w-full max-w-md text-center border-t-4 border-emerald-500 shadow-2xl">
+        <div class="mb-6">
+            <i class="fas fa-language text-5xl text-emerald-500"></i>
+        </div>
+        
+        <h2 class="text-xl font-bold text-white mb-2 uppercase tracking-tighter">Select Language</h2>
+        <h2 class="text-lg font-medium text-slate-400 mb-8 uppercase tracking-widest">ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ</h2>
+
+        <div class="grid gap-4">
+            <button onclick="setAppLanguage('kn-IN', 'ಸ್ವಾಗತ. ನಿಮ್ಮ ಜಮೀನನ್ನು ನಕ್ಷೆಯಲ್ಲಿ ಗುರುತಿಸಿ.')" 
+                class="lang-btn group flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl hover:border-emerald-500 transition-all">
+                <span class="text-lg font-bold">ಕನ್ನಡ (KANNADA)</span>
+                <i class="fas fa-chevron-right text-slate-600 group-hover:text-emerald-500"></i>
+            </button>
+
+            <button onclick="setAppLanguage('en-IN', 'Welcome. Please locate your farm on the map.')" 
+                class="lang-btn group flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl hover:border-emerald-500 transition-all">
+                <span class="text-lg font-bold uppercase tracking-widest">English</span>
+                <i class="fas fa-chevron-right text-slate-600 group-hover:text-emerald-500"></i>
+            </button>
+
+            <button onclick="setAppLanguage('hi-IN', 'नमस्ते. कृपया मानचित्र पर अपने खेत का चयन करें।')" 
+                class="lang-btn group flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl hover:border-emerald-500 transition-all">
+                <span class="text-lg font-bold">हिन्दी (HINDI)</span>
+                <i class="fas fa-chevron-right text-slate-600 group-hover:text-emerald-500"></i>
+            </button>
+        </div>
+    </div>
+
+   <script>
+    // 1. Pre-warm the engine and keep track of voices
+    let voices = [];
+    function loadVoices() {
+        voices = window.speechSynthesis.getVoices();
+    }
+    
+    window.onload = loadVoices;
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    function setAppLanguage(langCode, welcomeMsg) {
+        // Immediate Log for debugging
+        console.log("Language Selected: " + langCode);
+        
+        // 2. Save choice to localStorage
+        localStorage.setItem('selectedLang', langCode);
+        
+        // 3. Trigger Localized Voice
+        smartSpeak(welcomeMsg, langCode);
+
+        // 4. MANUAL CONTROL: Show a proceed button instead of auto-redirecting
+        // This allows the user to hear the full message and you to control the demo pace
+        setTimeout(() => {
+            const container = document.querySelector('.grid');
+            // Remove existing buttons to clear the UI
+            container.innerHTML = ''; 
+            
+            const proceedBtn = document.createElement('button');
+            proceedBtn.innerHTML = langCode === 'kn-IN' ? 
+                'ನಕ್ಷೆಗೆ ಹೋಗಿ <i class="fas fa-map-marked-alt ml-2"></i>' : 
+                'PROCEED TO MAP <i class="fas fa-map-marked-alt ml-2"></i>';
+            
+            proceedBtn.className = "w-full bg-emerald-500 text-slate-950 font-black py-6 rounded-2xl shadow-2xl animate-bounce uppercase italic tracking-widest";
+            proceedBtn.onclick = () => window.location.href = "/location";
+            
+            container.appendChild(proceedBtn);
+        }, 1500);
+    }
+
+    function smartSpeak(text, lang) {
+        // Cancel any existing speech to avoid overlap
+        window.speechSynthesis.cancel();
+
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = lang;
+        utter.rate = 0.85; // Slightly slower for better clarity during demos
+
+        // CRUCIAL: Filter for a voice that actually supports the language code
+        // This fixes the issue where Kannada/Hindi text is read with an English accent
+        const matchedVoice = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+        if (matchedVoice) {
+            utter.voice = matchedVoice;
+        }
+
+        window.speechSynthesis.speak(utter);
+    }
+</script>
+</body>
+</html>
